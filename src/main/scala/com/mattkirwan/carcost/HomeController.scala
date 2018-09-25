@@ -1,25 +1,26 @@
 package com.mattkirwan.carcost
 
-import java.io.{BufferedWriter, File, FileWriter}
 import java.util.UUID
 
 import org.json4s.JsonDSL._
-import org.json4s.jackson.Serialization.{write}
-import org.json4s.NoTypeHints
+import org.json4s.jackson.Serialization.write
+import org.json4s.{Formats, NoTypeHints}
 import org.json4s.jackson.Serialization
 import org.scalatra.{BadRequest, ScalatraServlet}
 import org.scalatra.forms._
 import org.scalatra.i18n.I18nSupport
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
+import com.mattkirwan.carcost.forms.validation.CreateCarValidationForm
+import com.mattkirwan.carcost.forms.validation.LoadCarValidationForm
+import com.mattkirwan.carcost.helpers.FileHelpers.writeFileWithTry
 
-import forms.validation.CreateCarValidationForm
-import forms.validation.LoadCarValidationForm
+import scala.util.{Failure, Success}
 
 class HomeController extends ScalatraServlet with FormSupport with I18nSupport {
 
-  implicit val formats = Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = Serialization.formats(NoTypeHints)
 
-  val logger =  LoggerFactory.getLogger(getClass)
+  val logger: Logger =  LoggerFactory.getLogger(getClass)
 
   val createForm: MappingValueType[CreateCarValidationForm] = mapping(
     "car" -> label("Car Make/Model", text(required, maxlength(100))),
@@ -53,16 +54,27 @@ class HomeController extends ScalatraServlet with FormSupport with I18nSupport {
 
   def createCarFile(formData: CreateCarValidationForm): String = {
     val uuid = UUID.randomUUID().toString
+    logger.info("Creating file {}", uuid)
 
-    logger.info("Creating car data file {}", uuid)
+    val json = ("car" -> formData.car)  ~ ("pricePaid" -> formData.pricePaid)
 
-    val json = (("car" -> formData.car)  ~ ("pricePaid" -> formData.pricePaid))
-    log(println(write(json)).toString)
-    val file = new File("data/cars/" + uuid + ".json")
-    val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(write(json))
-    bw.close
-    uuid
+    val writeFile = writeFileWithTry("data/cars/" + uuid + ".json", write(json))
+
+    val car: Option[String] = writeFile match {
+      case Success(filename) => {
+        logger.info("Successful write of file {}", filename)
+        Some(filename)
+      }
+      case Failure(e) => {
+        logger.error("Failed to write file {}", e.getMessage)
+        None
+      }
+    }
+
+    car match {
+      case Some(filename) => uuid
+      case None => halt(500)
+    }
   }
 
 }

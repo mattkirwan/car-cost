@@ -1,40 +1,20 @@
 package com.mattkirwan.carcost
 
-import com.mattkirwan.carcost.Control.using
 import com.mattkirwan.carcost.data.Car
+import com.mattkirwan.carcost.helpers.FileHelpers.readFileWithTry
 import org.json4s.NoTypeHints
 import org.json4s.jackson.JsonMethods.parse
 import org.json4s.jackson.Serialization
 import org.scalatra.ScalatraServlet
 import org.slf4j.LoggerFactory
 
-import scala.io.Source
-import scala.util.{Failure, Success, Try}
-
-
-object Control {
-  def using[A <: { def close(): Unit }, B](param: A)(f: A => B): B =
-    try {
-      f(param)
-    } finally {
-      param.close()
-    }
-}
+import scala.util.{Failure, Success}
 
 class DashboardController extends ScalatraServlet {
 
   implicit val formats = Serialization.formats(NoTypeHints)
 
   val logger =  LoggerFactory.getLogger(getClass)
-
-  def readFileWithTry(filename: String): Try[List[String]] = {
-    Try {
-      val lines = using(Source.fromFile(filename)) { source =>
-        (for (line <- source.getLines) yield line).toList
-      }
-      lines
-    }
-  }
 
   def handleJsonParseException(e: Throwable): Unit = {
     logger.error("error parsing car data json. Reason: {}", e.getMessage)

@@ -3,7 +3,6 @@ package com.mattkirwan.carcost
 import java.io.{BufferedWriter, File, FileWriter}
 import java.util.UUID
 
-import com.fasterxml.jackson.core.JsonParseException
 import org.slf4j.{Logger, LoggerFactory}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
@@ -53,7 +52,7 @@ class HomeController extends ScalatraServlet with FormSupport with I18nSupport {
 
   def readFileWithTry(filename: String): Try[List[String]] = {
     Try {
-      val lines = using(io.Source.fromFile(filename)) { source =>
+      val lines = using(Source.fromFile(filename)) { source =>
         (for (line <- source.getLines) yield line).toList
       }
       lines
@@ -73,8 +72,8 @@ class HomeController extends ScalatraServlet with FormSupport with I18nSupport {
     validate(createForm)(
       errors => BadRequest(html.home()),
       createForm => {
-        bleepBleep
-        html.result(createForm, UUID.randomUUID().toString)
+        val uuid = createCarFile(createForm)
+        redirect("/dashboard/" + uuid)
       }
     )
   }
@@ -82,14 +81,11 @@ class HomeController extends ScalatraServlet with FormSupport with I18nSupport {
   post("/load-car") {
     validate(loadForm)(
       errors => BadRequest(html.home()),
-      loadForm => {
-        loadCar(loadForm.uuid)
-        redirect("/view-car/" + loadForm.uuid)
-      }
+      loadForm => redirect("/dashboard/" + loadForm.uuid)
     )
   }
 
-  get("/view-car/:uuid") {
+  get("/dashboard/:uuid") {
 
     val dataDirCars = "data/cars/"
     val uuid = params("uuid")
@@ -119,44 +115,22 @@ class HomeController extends ScalatraServlet with FormSupport with I18nSupport {
       case None => halt(500)
     }
 
-
-
-
-
-
-
-
-
-//    if (!fileCarData.exists) {
-//      logger.error("file {} does not exist", fileCarData.getAbsoluteFile)
-//      halt(404, "car data not found")
-//    }
-
-//    val json = parse(fileCarData)
-
-//    println(json)
-
-
-//    val json = ("person" -> ("name" -> "matt") ~ ("id" -> "54321"))
-//    log(println(write(json)).toString)
-//    val file = new File("test")
-//    val bw = new BufferedWriter(new FileWriter(file))
-//    bw.write(write(json))
-//    bw.close
-
-//    html.viewCar(params("uuid"), Car.toString)
   }
 
-  def bleepBleep: Unit = {
-    log("Storing car data...")
+  def createCarFile(formData: CreateCarValidationForm): String = {
+    val uuid = UUID.randomUUID().toString
+
+    logger.info("Creating car data file {}", uuid)
+
+    val json = (("car" -> formData.car)  ~ ("pricePaid" -> formData.pricePaid))
+    log(println(write(json)).toString)
+    val file = new File("data/cars/" + uuid + ".json")
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(write(json))
+    bw.close
+    uuid
 
   }
-
-  def loadCar(uuid: String): Unit = {
-    log("Loading car: " + uuid)
-  }
-
-
 
 }
 

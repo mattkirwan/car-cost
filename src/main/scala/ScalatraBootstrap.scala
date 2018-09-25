@@ -1,9 +1,9 @@
-import com.mattkirwan.carcost._
+import com.mattkirwan.carcost.HomeController
 import org.scalatra._
 import javax.servlet.ServletContext
 
 class ScalatraBootstrap extends LifeCycle {
   override def init(context: ServletContext) {
-    context.mount(new SiteServlet, "/*")
+    context.mount(new HomeController, "/*")
   }
 }

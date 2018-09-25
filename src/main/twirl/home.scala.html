@@ -1,0 +1,28 @@
+@()(implicit request: javax.servlet.http.HttpServletRequest)
+@import org.scalatra.forms.views._
+
+<form action="/create-car" method="post">
+
+    <label>Car Make/Model:</label>
+    @Html(text("car"))
+    <span class="error">@error("car")</span>
+
+    <label>Price Paid:</label>
+    @Html(text("pricePaid"))
+    <span class="error">@error("pricePaid")</span>
+
+    <input type="submit" value="Submit" />
+
+</form>
+
+<hr />
+
+<form action="/load-car" method="post">
+
+    <label>Your Unique ID:</label>
+    @Html(text("uuid"))
+    <span class="error">@error("uuid")</span>
+
+    <input type="submit" value="Submit" />
+
+</form>
